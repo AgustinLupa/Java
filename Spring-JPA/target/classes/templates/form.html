@@ -16,7 +16,7 @@
         <div class="row">
             <div class="col">
                 <br>
-                <form th:action="@{/form}" th:object="${cliente}" method="post">
+                <form th:action="@{/form}" th:object="${cliente}" method="post" enctype="multipart/form-data">
                     <table class="table">
                         <tr>
                             <td>Nombre</td>
@@ -29,6 +29,10 @@
                         <tr>
                             <td>Apellido</td>
                             <td><input type="text" th:field="*{apellido}"></td>
+                        </tr>
+                         <tr>
+                            <td>Foto</td>
+                            <td><input type="file" name="file"></td>
                         </tr>
                         <tr th:if="${#fields.hasErrors('apellido')}">
                             <td>

@@ -1,6 +1,12 @@
 package main.controllers;
 
 import java.util.Map;
+import java.util.UUID;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +16,8 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.validation.Valid;
 import main.models.dao.IClienteDao;
@@ -38,7 +46,7 @@ public class ClienteController {
 	}
 	
 	@PostMapping("/form")
-	public String guardar(@Valid Cliente cliente, BindingResult resultado, Model model) {
+	public String guardar(@Valid Cliente cliente, BindingResult resultado, Model model, @RequestParam("file") MultipartFile foto) {
 		if (resultado.hasErrors()) {
 			model.addAttribute("titulo", "Formulario de cliente");
 			//Map<String, String> errores= new HashMap<>();
@@ -49,7 +57,26 @@ public class ClienteController {
 			//);
 			return "form";
 		}
-		clienteDao.save(cliente);		
+		clienteDao.save(cliente);
+		if(!foto.isEmpty()) {
+			if(cliente.getId() != null && cliente.getId()>0 && cliente.getFoto()!= null && cliente.getFoto().length()>0) {
+				Path rootpath = Paths.get("uplooads").resolve(cliente.getFoto()).toAbsolutePath();
+				File archivo = rootpath.toFile();
+				if(archivo.exists() && archivo.canRead()) {
+					archivo.delete();
+				}
+			}
+			String uniqueFileName = UUID.randomUUID().toString() + "_" + foto.getOriginalFilename();
+			Path rootpath= Paths.get("uploads").resolve(uniqueFileName);
+			Path rootAbsolute = rootpath.toAbsolutePath();
+			try {
+				Files.copy(foto.getInputStream(), rootAbsolute);
+				cliente.setFoto(uniqueFileName);
+			}
+			catch (IOException e){
+				e.printStackTrace();
+			}
+		}
 		return "redirect:/listar";
 	}
 	
@@ -65,6 +92,17 @@ public class ClienteController {
 		model.put("cliente", cliente);
 		model.put("titulo", "Editar cliente");
 		return "form";
+	}
+	
+	@GetMapping("/ver/{id}")
+	public String ver(@PathVariable(value="id") long id, Map<String, Object> model) {
+		Cliente cliente = clienteDao.findOne(id);
+		if(cliente ==null) {
+			return "redirect:/Listar";
+		}
+		model.put("cliente", cliente);
+		model.put("titulo", "detalle cliente");
+		return "ver";
 	}
 	
 	@GetMapping("/eliminar/{id}")
